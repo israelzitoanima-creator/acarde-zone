@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Arcade Zone 4.0</title>
+<style>
+:root{--bg:#071426;--panel:#102744;--panel2:#163657;--blue:#38a5ff;--lime:#b7f34a;--text:#f2f7ff;--muted:#a9bdd3;--danger:#ff6b78}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at top,#12345a 0,#071426 55%);color:var(--text);font-family:system-ui,Segoe UI,sans-serif;min-height:100vh}
+header{padding:22px 16px;text-align:center;border-bottom:1px solid #244668;background:#08182bdc;position:sticky;top:0;z-index:5;backdrop-filter:blur(10px)}
+h1{margin:0;color:var(--lime);font-size:clamp(2rem,6vw,3.3rem);letter-spacing:2px;text-shadow:0 0 18px #9eea4655}
+header p{margin:5px 0 0;color:var(--muted)}.wallet{display:inline-block;margin-top:10px;padding:8px 15px;border:1px solid #80bb42;border-radius:30px;background:#172f28;color:var(--lime);font-weight:800}
+nav{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;padding:14px}
+button{border:0;border-radius:12px;padding:10px 15px;background:var(--blue);color:#06182a;font-weight:800;cursor:pointer;transition:.15s}
+button:hover{filter:brightness(1.12);transform:translateY(-1px)}button:disabled{opacity:.45;cursor:not-allowed;transform:none}
+nav button{background:var(--panel2);color:var(--text);border:1px solid #31577b}nav button.active{background:var(--lime);color:#14230b;border-color:var(--lime)}
+main{width:min(1100px,94%);margin:10px auto 50px}.page{display:none}.page.active{display:block}
+h2{color:var(--lime);margin:10px 0 16px}.sub{color:var(--muted)}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:15px}
+.card,.panel{background:linear-gradient(145deg,var(--panel),#0b1d33);border:1px solid #24496c;border-radius:18px;padding:18px;box-shadow:0 10px 28px #0003}
+.card .emoji{font-size:2.7rem}.card h3{margin:7px 0}.card p{color:var(--muted);min-height:42px}
+.game{display:none}.game.active{display:block}.gamebar{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+canvas{display:block;max-width:100%;margin:12px auto;background:#07111e;border:3px solid #31577b;border-radius:12px;touch-action:manipulation}
+.controls{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin:12px}
+.grid{display:grid;gap:7px;max-width:390px;margin:16px auto}.ttt{grid-template-columns:repeat(3,1fr)}.ttt button{aspect-ratio:1;font-size:clamp(2rem,9vw,3.6rem);background:#17395c;color:white}
+.memory{grid-template-columns:repeat(4,1fr);max-width:440px}.memory button{aspect-ratio:1;font-size:clamp(1.5rem,7vw,2.5rem);background:#17395c;color:white}
+.shopgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px}.item{background:#0d2037;border:1px solid #2a4f73;border-radius:15px;padding:14px}.item h3{margin:5px 0}.price{color:var(--lime);font-weight:900}
+select{padding:9px;border-radius:9px;background:#102744;color:white;border:1px solid #42698d}
+.notice{color:var(--muted);font-size:.92rem}.locked{opacity:.8}.pill{display:inline-block;padding:4px 9px;border-radius:20px;background:#233d59;color:var(--lime);font-size:.8rem;font-weight:800}
+footer{text-align:center;color:var(--muted);padding:25px}
+#toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:#d9ff9a;color:#10210b;padding:11px 18px;border-radius:30px;font-weight:900;display:none;z-index:10;box-shadow:0 5px 25px #0008}
+@media(max-width:520px){header{position:static}nav button{flex:1 1 40%}.card p{min-height:0}}
+</style>
+</head>
+<body>
+<header>
+<h1>ARCADE ZONE</h1><p>Jogue. Ganhe. Desbloqueie. Personalize.</p>
+<div class="wallet">🪙 <span id="coins">0</span> moedas</div>
+</header>
+<nav>
+<button class="active" data-page="home">🏠 Início</button>
+<button data-page="games">🎮 Minigames</button>
+<button data-page="shop">🛒 Loja</button>
+<button data-page="wallet">👛 Carteira</button>
+</nav>
+<main>
+<section id="home" class="page active">
+<h2>Bem-vindo ao fliperama! 👾</h2>
+<div class="panel"><h3>Seu próximo recorde começa aqui.</h3><p class="sub">Jogue para ganhar moedas, desbloqueie novos desafios e deixe seus jogos com a sua cara.</p><button onclick="showPage('games')">Escolher jogo 🎮</button></div>
+<h2>Seus jogos</h2><div class="cards" id="homeCards"></div>
+</section>
+<section id="games" class="page">
+<h2>Minigames 🎮</h2><div id="gameMenu" class="cards"></div>
+<div id="snakeGame" class="game panel">
+<div class="gamebar"><h3>🐍 Cobrinha</h3><b>Comidas: <span id="snakeScore">0</span> · +10 por comida</b></div>
+<canvas id="snakeCanvas" width="400" height="400"></canvas>
+<div class="controls"><button onclick="snakeDir(0,-1)">⬆️</button></div><div class="controls"><button onclick="snakeDir(-1,0)">⬅️</button><button onclick="snakeDir(0,1)">⬇️</button><button onclick="snakeDir(1,0)">➡️</button></div>
+<div class="controls"><button onclick="startSnake()">Recomeçar</button><button onclick="backGames()">Voltar</button></div><p class="notice">Use as setas do teclado ou os botões. Cada comida vale 10 moedas. A cobrinha tem roupa equipada na loja!</p>
+</div>
+<div id="tttGame" class="game panel"><div class="gamebar"><h3>❎ Jogo da Velha</h3><span id="tttStatus">Sua vez!</span></div>
+<div class="controls"><label for="tttDifficulty">Dificuldade:</label><select id="tttDifficulty" onchange="changeDifficulty()"><option value="easy">🟢 Fácil</option><option value="medium" selected>🟡 Médio</option><option value="hard">🔴 Impossível</option></select></div>
+<div id="tttBoard" class="grid ttt"></div><div class="controls"><button onclick="resetTTT()">Recomeçar</button><button onclick="backGames()">Voltar</button></div><p class="notice">Você é X. O computador joga com O. Empatar também é um bom resultado contra uma IA perfeita!</p></div>
+<div id="memoryGame" class="game panel"><div class="gamebar"><h3>🧠 Memória</h3><b>Pares: <span id="pairs">0</span>/8</b></div><div id="memoryBoard" class="grid memory"></div><div class="controls"><button onclick="startMemory()">Recomeçar</button><button onclick="backGames()">Voltar</button></div></div>
+<div id="racerGame" class="game panel"><div class="gamebar"><h3>🏎️ Desvio Radical</h3><b>Pontos: <span id="raceScore">0</span></b></div><canvas id="raceCanvas" width="360" height="480"></canvas><div class="controls"><button onclick="moveCar(-1)">⬅️</button><button onclick="startRace()">Começar / Recomeçar</button><button onclick="moveCar(1)">➡️</button></div><p class="notice">Desvie dos obstáculos. Use ← → ou os botões. Cada 10 pontos vale 10 moedas!</p><div class="controls"><button onclick="backGames()">Voltar</button></div></div>
+<div id="puzzleGame" class="game panel"><div class="gamebar"><h3>🧩 Quebra-cabeça</h3><span id="puzzleMoves">Movimentos: 0</span></div><p class="sub">Organize os números de 1 a 8. Clique em uma peça ao lado do espaço vazio para movê-la.</p><div id="puzzleBoard" class="grid ttt"></div><div class="controls"><button onclick="startPuzzle()">Embaralhar</button><button onclick="backGames()">Voltar</button></div></div>
+</section>
+<section id="shop" class="page"><h2>Loja Arcade 🛒</h2><p class="sub">Compre desbloqueios e visuais usando suas moedas.</p><h3>Desbloquear minigames</h3><div class="shopgrid" id="unlockShop"></div><h3>Personalizar seus jogos</h3><div class="shopgrid" id="skinShop"></div></section>
+<section id="wallet" class="page"><h2>Carteira 🪙</h2><div class="panel"><h3><span id="walletCoins">0</span> moedas disponíveis</h3><p class="sub">As moedas e compras ficam salvas neste navegador.</p><p>🏆 Vitória em Jogo da Velha ou Memória completa: +50 moedas.</p><p>🐍 Cada comida da Cobrinha: +10 moedas.</p><p>🏎️ A cada 10 pontos na corrida: +10 moedas.</p><p class="notice">Dica: suas moedas ficam neste dispositivo e navegador. Limpar os dados do navegador pode apagá-las.</p><button onclick="showPage('shop')">Ir para a loja 🛒</button></div></section>
+</main><footer>ARCADE ZONE 4.0 · Feito para jogar! 💙💚</footer><div id="toast"></div>
+<script>
+const $=id=>document.getElementById(id);
+const defaults={coins:0,unlocked:{snake:true,ttt:true,memory:true,racer:false,puzzle:false},snakeSkin:"lime",carColor:"#38a5ff",owned:[]};
+let save={...defaults,...JSON.parse(localStorage.getItem("arcadeSave")||"{}")};
+save.unlocked={...defaults.unlocked,...(save.unlocked||{})};save.owned=save.owned||[];
+function persist(){localStorage.setItem("arcadeSave",JSON.stringify(save));updateWallet();renderShop();renderMenu()}
+function updateWallet(){$("coins").textContent=save.coins;$("walletCoins").textContent=save.coins}
+function toast(t){let el=$("toast");el.textContent=t;el.style.display="block";clearTimeout(window.toastTimer);window.toastTimer=setTimeout(()=>el.style.display="none",2100)}
+function addCoins(n,msg){save.coins+=n;persist();toast("🪙 +"+n+" moedas! "+(msg||""))}
+function showPage(p){document.querySelectorAll(".page").forEach(x=>x.classList.remove("active"));$(p).classList.add("active");document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("active",b.dataset.page===p));closeGames();if(p==="games")renderMenu()}
+document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>{sound("click");showPage(b.dataset.page)});
+function closeGames(){document.querySelectorAll(".game").forEach(x=>x.classList.remove("active"));$("gameMenu").style.display="grid";if(snakeTimer){clearInterval(snakeTimer);snakeTimer=null}if(raceTimer){clearInterval(raceTimer);raceTimer=null}}
+function backGames(){closeGames();renderMenu()}
+const gameInfo={snake:["🐍","Cobrinha","Pegue a comida e cresça."],ttt:["❎","Jogo da Velha","Tente empatar ou vencer."],memory:["🧠","Memória","Encontre os oito pares."],racer:["🏎️","Desvio Radical","Desvie dos obstáculos."],puzzle:["🧩","Quebra-cabeça","Coloque os números em ordem."]};
+function renderMenu(){let html="";for(let id of Object.keys(gameInfo)){let [e,n,d]=gameInfo[id],ok=save.unlocked[id];html+=`<article class="card ${ok?"":"locked"}"><div class="emoji">${e}</div><h3>${n}</h3><p>${d}</p>${ok?`<button onclick="openGame('${id}')">Jogar</button>`:`<span class="pill">🔒 Bloqueado</span> <button onclick="showPage('shop')">Ver na loja</button>`}</article>`}$("gameMenu").innerHTML=html}
+function openGame(id){if(!save.unlocked[id])return toast("🔒 Desbloqueie na loja!");closeGames();$("gameMenu").style.display="none";let map={snake:"snakeGame",ttt:"tttGame",memory:"memoryGame",racer:"racerGame",puzzle:"puzzleGame"};$(map[id]).classList.add("active");sound("start");if(id==="snake")startSnake();if(id==="ttt")resetTTT();if(id==="memory")startMemory();if(id==="racer")drawRace();if(id==="puzzle")startPuzzle()}
+function renderShop(){let unlocks=[["racer","🏎️ Desvio Radical",180,"Um desafio de reflexos."],["puzzle","🧩 Quebra-cabeça",140,"Organize as peças." ]];$("unlockShop").innerHTML=unlocks.map(([id,n,c,d])=>`<div class="item"><h3>${n}</h3><p class="sub">${d}</p><div class="price">${save.unlocked[id]?"✅ Desbloqueado": "🪙 "+c+" moedas"}</div><button ${save.unlocked[id]?"disabled":""} onclick="buyUnlock('${id}',${c})">${save.unlocked[id]?"Comprado":"Comprar"}</button></div>`).join("");
+let skins=[["snakeSkin","🐍 Cobrinha azul","blue",60],["snakeSkin","🐍 Cobrinha rosa","pink",60],["snakeSkin","🐍 Cobrinha dourada","gold",100],["carColor","🚗 Carro verde","#b7f34a",60],["carColor","🚗 Carro vermelho","#ff5964",60],["carColor","🚗 Carro roxo","#ad83ff",80]];
+$("skinShop").innerHTML=skins.map(([type,name,val,c])=>{let id=type+val,owned=save.owned.includes(id),equipped=save[type]===val;return `<div class="item"><h3>${name}</h3><div class="price">${equipped?"⭐ Equipado":owned?"✅ Na coleção":"🪙 "+c+" moedas"}</div><button ${equipped?"disabled":""} onclick="buySkin('${type}','${val}',${c})">${equipped?"Equipado":owned?"Equipar":"Comprar"}</button></div>`}).join("")}
+function buyUnlock(id,c){if(save.coins<c)return toast("Moedas insuficientes!");save.coins-=c;save.unlocked[id]=true;persist();sound("unlock");toast("🎉 Jogo desbloqueado!")}
+function buySkin(type,val,c){let id=type+val;if(!save.owned.includes(id)){if(save.coins<c)return toast("Moedas insuficientes!");save.coins-=c;save.owned.push(id)}save[type]=val;persist();sound("buy");toast("✨ Visual equipado!")}
+function renderHome(){$("homeCards").innerHTML=Object.keys(gameInfo).filter(id=>save.unlocked[id]).map(id=>`<div class="card"><div class="emoji">${gameInfo[id][0]}</div><h3>${gameInfo[id][1]}</h3><p>${gameInfo[id][2]}</p><button onclick="showPage('games');setTimeout(()=>openGame('${id}'),30)">Jogar</button></div>`).join("")}
+const AC=window.AudioContext||window.webkitAudioContext;let audio=null,musicOn=true,musicTimer=null,musicStep=0;
+function tone(freq,dur=.09,type="square",vol=.045){if(!AC)return;audio=audio||new AC();if(audio.state==="suspended")audio.resume();let o=audio.createOscillator(),g=audio.createGain();o.type=type;o.frequency.value=freq;g.gain.setValueAtTime(vol,audio.currentTime);g.gain.exponentialRampToValueAtTime(.001,audio.currentTime+dur);o.connect(g);g.connect(audio.destination);o.start();o.stop(audio.currentTime+dur)}
+function sound(kind){let seq={click:[[520,.04]],eat:[[660,.06],[880,.08]],win:[[523,.1],[659,.1],[784,.18]],lose:[[300,.15],[190,.2]],buy:[[700,.06],[950,.12]],unlock:[[523,.08],[659,.08],[784,.08],[1046,.2]],start:[[440,.07],[660,.09]]};(seq[kind]||[]).forEach((x,i)=>setTimeout(()=>tone(x[0],x[1]),i*85))}
+const melody=[523,659,784,659,587,698,880,698,523,659,784,1046,880,784,659,587];
+function musicTick(){if(!musicOn)return;tone(melody[musicStep++%melody.length],.12,"square",.018);if(musicStep%4===0)tone(130,.1,"triangle",.012)}
+function startMusic(){if(musicTimer)return;musicTimer=setInterval(musicTick,180)}
+// Som e música começam após interação, respeitando bloqueio de autoplay do navegador.
+document.addEventListener("pointerdown",()=>{if(musicOn)startMusic()},{once:true});
+/* SNAKE */
+const sc=$("snakeCanvas"),sx=sc.getContext("2d");let snake=[],food={},sd={x:1,y:0},nextDir={x:1,y:0},snakeTimer=null,snakeCount=0,snakeOver=false;
+function startSnake(){clearInterval(snakeTimer);snake=[{x:10,y:10},{x:9,y:10},{x:8,y:10}];sd={x:1,y:0};nextDir={...sd};snakeCount=0;snakeOver=false;placeFood();$("snakeScore").textContent=0;drawSnake();snakeTimer=setInterval(tickSnake,115)}
+function placeFood(){food={x:Math.floor(Math.random()*20),y:Math.floor(Math.random()*20)};if(snake.some(p=>p.x===food.x&&p.y===food.y))placeFood()}
+function snakeDir(x,y){if(x!==-sd.x||y!==-sd.y)nextDir={x,y}}
+function tickSnake(){sd=nextDir;let h={x:snake[0].x+sd.x,y:snake[0].y+sd.y};if(h.x<0||h.y<0||h.x>=20||h.y>=20||snake.some(p=>p.x===h.x&&p.y===h.y)){clearInterval(snakeTimer);snakeTimer=null;snakeOver=true;sound("lose");toast("🐍 Fim de jogo! Você fez "+snakeCount+" pontos.");return}snake.unshift(h);if(h.x===food.x&&h.y===food.y){snakeCount++;$("snakeScore").textContent=snakeCount;addCoins(10,"comida coletada!");sound("eat");placeFood()}else snake.pop();drawSnake()}
+function drawSnake(){sx.fillStyle="#07111e";sx.fillRect(0,0,400,400);sx.fillStyle="#ff6377";sx.fillRect(food.x*20+3,food.y*20+3,14,14);let colors={lime:"#b7f34a",blue:"#38a5ff",pink:"#ff80b5",gold:"#ffd45a"};snake.forEach((p,i)=>{sx.fillStyle=colors[save.snakeSkin]||colors.lime;sx.fillRect(p.x*20+1,p.y*20+1,18,18);if(i===0){sx.fillStyle="#102030";sx.fillRect(p.x*20+5,p.y*20+5,3,3);sx.fillRect(p.x*20+12,p.y*20+5,3,3)}})}
+/* TIC TAC TOE: minimax, com resultado de empate contra jogo perfeito */
+let ttt=Array(9).fill(""),tttBusy=false,tttPaid=false,tttDifficulty="medium";const wins=[[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+function winner(b){for(let w of wins)if(b[w[0]]&&b[w[0]]===b[w[1]]&&b[w[1]]===b[w[2]])return b[w[0]];return b.every(Boolean)?"draw":null}
+function mini(b,depth,max){let r=winner(b);if(r==="O")return 10-depth;if(r==="X")return depth-10;if(r==="draw")return 0;let best=max?-Infinity:Infinity;for(let i=0;i<9;i++)if(!b[i]){b[i]=max?"O":"X";let s=mini(b,depth+1,!max);b[i]="";best=max?Math.max(best,s):Math.min(best,s)}return best}
+function changeDifficulty(){tttDifficulty=$("tttDifficulty").value;resetTTT();toast("Dificuldade: "+({easy:"Fácil",medium:"Médio",hard:"Impossível"}[tttDifficulty]))}
+function resetTTT(){ttt=Array(9).fill("");tttBusy=false;tttPaid=false;$("tttStatus").textContent="Sua vez!";drawTTT()}
+function drawTTT(){$("tttBoard").innerHTML=ttt.map((v,i)=>`<button onclick="playerTTT(${i})">${v||" "}</button>`).join("")}
+function chooseComputerMove(){
+ let empty=ttt.map((v,i)=>v?null:i).filter(v=>v!==null);
+ if(tttDifficulty==="easy")return empty[Math.floor(Math.random()*empty.length)];
+ let best=-Infinity,opts=[];
+ for(let j of empty){ttt[j]="O";let s=mini(ttt,0,false);ttt[j]="";if(s>best){best=s;opts=[j]}else if(s===best)opts.push(j)}
+ if(tttDifficulty==="medium"&&Math.random()<0.45)return empty[Math.floor(Math.random()*empty.length)];
+ return opts[Math.floor(Math.random()*opts.length)];
+}
+function playerTTT(i){if(tttBusy||ttt[i]||winner(ttt))return;ttt[i]="X";drawTTT();let r=winner(ttt);if(r){finishTTT(r);return}tttBusy=true;$("tttStatus").textContent="🤖 Pensando...";setTimeout(()=>{let move=chooseComputerMove();ttt[move]="O";tttBusy=false;drawTTT();let rr=winner(ttt);if(rr)finishTTT(rr);else $("tttStatus").textContent="Sua vez!";},300)}
+function finishTTT(r){if(r==="X"){ $("tttStatus").textContent="🎉 Você venceu! +50 moedas";if(!tttPaid){addCoins(50,"vitória!");tttPaid=true}sound("win")}else if(r==="draw"){$("tttStatus").textContent="🤝 Empate!";sound("win")}else{$("tttStatus").textContent="🤖 O venceu!";sound("lose")}}
+/* MEMORY */
+const memIcons=["🍉","🍋","🍇","🍓","🍒","🥝","🍍","🥥"];let mem=[],memOpen=[],memDone=[],memLock=false,memPaid=false;
+function startMemory(){mem=[...memIcons,...memIcons].sort(()=>Math.random()-.5);memOpen=[];memDone=[];memLock=false;memPaid=false;$("pairs").textContent=0;drawMemory()}
+function drawMemory(){$("memoryBoard").innerHTML=mem.map((v,i)=>`<button onclick="flipMemory(${i})">${memDone.includes(i)||memOpen.includes(i)?v:"❔"}</button>`).join("")}
+function flipMemory(i){if(memLock||memDone.includes(i)||memOpen.includes(i))return;memOpen.push(i);sound("click");drawMemory();if(memOpen.length===2){memLock=true;let [a,b]=memOpen;if(mem[a]===mem[b]){memDone.push(a,b);$("pairs").textContent=memDone.length/2;memOpen=[];memLock=false;sound("eat");drawMemory();if(memDone.length===16&&!memPaid){memPaid=true;addCoins(50,"memória completa!");sound("win")}}else setTimeout(()=>{memOpen=[];memLock=false;drawMemory()},700)}}
+/* RACER */
+const rc=$("raceCanvas"),rx=rc.getContext("2d");let carLane=1,obstacles=[],raceScore=0,raceTimer=null,raceEnded=true,racePaid=0,raceTicks=0,lastOpenLane=1;
+function moveCar(d){carLane=Math.max(0,Math.min(2,carLane+d));drawRace()}
+function startRace(){clearInterval(raceTimer);carLane=1;obstacles=[];raceScore=0;racePaid=0;raceTicks=0;lastOpenLane=1;raceEnded=false;$("raceScore").textContent=0;raceTimer=setInterval(tickRace,65);drawRace()}
+function spawnRaceWave(){
+ // Cada fileira deixa pelo menos uma faixa livre. A faixa livre só muda
+ // uma posição por fileira, então sempre existe uma rota alcançável.
+ const possible=[lastOpenLane];
+ if(lastOpenLane>0)possible.push(lastOpenLane-1);
+ if(lastOpenLane<2)possible.push(lastOpenLane+1);
+ const open=possible[Math.floor(Math.random()*possible.length)];
+ lastOpenLane=open;
+ for(let lane=0;lane<3;lane++)if(lane!==open)obstacles.push({lane,y:-55, speed:raceSpeed()});
+}
+function raceSpeed(){return Math.min(12,4+Math.floor(raceScore/120))}
+function tickRace(){
+ raceTicks++;
+ // A dificuldade sobe gradualmente: a cada 120 pontos, os obstáculos aceleram.
+ if(raceTicks%38===0)spawnRaceWave();
+ const speed=raceSpeed();
+ obstacles.forEach(o=>o.y+=speed);
+ if(obstacles.some(o=>o.lane===carLane&&o.y>385&&o.y<455)){
+  clearInterval(raceTimer);raceTimer=null;raceEnded=true;sound("lose");toast("🏎️ Bateu! Pontuação: "+raceScore);return;
+ }
+ obstacles=obstacles.filter(o=>o.y<500);
+ raceScore++;$("raceScore").textContent=raceScore;
+ if(raceScore%10===0){addCoins(10,"a cada 10 pontos!");sound("eat")}
+ drawRace();
+}
+function drawRace(){rx.fillStyle="#172c35";rx.fillRect(0,0,360,480);rx.fillStyle="#263c49";rx.fillRect(30,0,300,480);rx.strokeStyle="#dce9ee";rx.setLineDash([25,20]);rx.lineWidth=4;rx.beginPath();rx.moveTo(130,0);rx.lineTo(130,480);rx.moveTo(230,0);rx.lineTo(230,480);rx.stroke();rx.setLineDash([]);obstacles.forEach(o=>{rx.fillStyle="#ff5964";rx.fillRect(48+o.lane*100,o.y,64,42);rx.fillStyle="#fff";rx.fillRect(55+o.lane*100,o.y+7,12,8);rx.fillRect(93+o.lane*100,o.y+7,12,8)});rx.fillStyle=save.carColor;rx.fillRect(48+carLane*100,405,64,52);rx.fillStyle="#172033";rx.fillRect(58+carLane*100,412,12,12);rx.fillRect(90+carLane*100,412,12,12);if(raceEnded){rx.fillStyle="#fff";rx.font="bold 18px sans-serif";rx.textAlign="center";rx.fillText("APERTE COMEÇAR",180,235)}}
+window.addEventListener("keydown",e=>{if(e.key==="ArrowLeft"){snakeDir(-1,0);if($("racerGame").classList.contains("active"))moveCar(-1)}if(e.key==="ArrowRight"){snakeDir(1,0);if($("racerGame").classList.contains("active"))moveCar(1)}if(e.key==="ArrowUp")snakeDir(0,-1);if(e.key==="ArrowDown")snakeDir(0,1)});
+/* PUZZLE */
+let puzzle=[],puzzleMoves=0;function startPuzzle(){puzzle=[1,2,3,4,5,6,7,8,0];for(let k=0;k<150;k++){let z=puzzle.indexOf(0),opts=[z-3,z+3,...(z%3?[z-1]:[]),...(z%3<2?[z+1]:[])].filter(n=>n>=0&&n<9&&Math.abs((n%3)-(z%3))+Math.abs(Math.floor(n/3)-Math.floor(z/3))===1);let n=opts[Math.floor(Math.random()*opts.length)];[puzzle[z],puzzle[n]]=[puzzle[n],puzzle[z]]}puzzleMoves=0;drawPuzzle()}
+function drawPuzzle(){$("puzzleMoves").textContent="Movimentos: "+puzzleMoves;$("puzzleBoard").innerHTML=puzzle.map((v,i)=>`<button style="background:${v?"#17395c":"#07111e"}" onclick="movePuzzle(${i})">${v||""}</button>`).join("")}
+function movePuzzle(i){let z=puzzle.indexOf(0);if(Math.abs((i%3)-(z%3))+Math.abs(Math.floor(i/3)-Math.floor(z/3))!==1)return;[puzzle[i],puzzle[z]]=[puzzle[z],puzzle[i]];puzzleMoves++;sound("click");drawPuzzle();if(puzzle.every((v,i)=>v===((i+1)%9))){addCoins(50,"quebra-cabeça resolvido!");sound("win");toast("🧩 Resolvido! +50 moedas")}}
+updateWallet();renderMenu();renderShop();renderHome();drawRace();
+</script>
+</body></html>
